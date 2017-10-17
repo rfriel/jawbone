@@ -3,7 +3,7 @@ Automatic data retrieval, descriptive stats, plotting and regression for the sle
 
 I own a [Jawbone UP3](https://jawbone.com/fitness-tracker/up3) fitness tracker, which I wear at night to track how long I sleep and how much [light, deep and REM sleep](https://en.wikipedia.org/wiki/Sleep_cycle) I get.  This repo contains some code I've written to automatically retrieve my data from the Jawbone website and to do some statistics and visualization.
 
-The script `jawbone.py`, when run from the command line, will retrieve the data, print some statistical information to standard output, and create a PDF file with some plots.  As detailed below, it expects files called `cookies.txt` and `lifestyle_variables.csv` to be present in the same directory.
+The script `jawbone.py`, when run from the command line, will retrieve the data, print some statistical information to standard output, and create a PDF file with some plots.  As detailed below, it expects files called `cookies.txt` and `lifestyle_variables.csv` to be present in the same directory.  `jawbone.py` takes one argument: the calendar year for which to retrieve data (e.g. `jawbone.py 2017`).
 
 Requires numpy, pandas, pyplot, and statsmodels.
 
@@ -32,6 +32,10 @@ The script produces three kinds of output:
 3. Two time series plots, one for time in each sleep stage (in minutes) and one percentage of sleep spent in each sleep stage, saved to a file called `time_series_plots.pdf`
 
 (To do: change 1 and 2 from outputting via print statements to outputting in a more flexible way)
+
+Example output is given in the files [example_output.txt](example_output.txt) and [example_plots.pdf](example_plots.pdf).  Here's what the plots look like:
+
+<img src="https://github.com/rfriel/jawbone/raw/master/example_plots.png">
 
 ## Regressions
 
