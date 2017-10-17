@@ -35,7 +35,7 @@ The script produces three kinds of output:
 
 Example output is given in the files [example_output.txt](example_output.txt) and [example_plots.pdf](example_plots.pdf).  Here's what the plots look like:
 
-<img src="https://github.com/rfriel/jawbone/raw/master/example_plots.png">
+<img src="https://raw.githubusercontent.com/rfriel/jawbone/c15c6ca04930cc046f0d1ae475853257d0f0f013/example_plots.png">
 
 ## Regressions
 
