@@ -3,6 +3,8 @@
 import sys
 import requests
 
+from jawbone_data import JawboneData
+
 def cookies():
     try:
         with open('cookies.txt') as f:
@@ -10,6 +12,7 @@ def cookies():
         return {'jbsession': jbsession_val}
     except IOError:
         print 'File cookies.txt not found.'
+        sys.exit()
 
 def get_data(year):
     url = 'https://jawbone.com/user/settings/download_up_data?year=' + year
@@ -30,3 +33,12 @@ if __name__ == '__main__':
 
     year = sys.argv[1]
     get_data(year)
+
+    data = JawboneData(year)
+
+    print 80*'~'
+    data.summary_statistics()
+    print 80*'~'
+    data.regressions()
+    print 80*'~'
+    data.time_series_plots()

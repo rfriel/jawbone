@@ -9,7 +9,11 @@ import statsmodels.api as sm
 class JawboneData():
     def __init__(self, year):
         csv_file = year + '.csv'
-        df = pd.read_csv(csv_file)
+        try:
+            df = pd.read_csv(csv_file)
+        except IOError:
+            print 'File {} not found.'.format(csv_file)
+            sys.exit()
 
         # processing and cleaning jawbone data
         df_data = pd.DataFrame(
@@ -32,7 +36,12 @@ class JawboneData():
         self.sleep_data_days = sleep_data_days
 
         # processing and cleaning lifestyle data
-        df_lifestyle = pd.read_csv('lifestyle_variables.csv')
+        csv_file = 'lifestyle_variables.csv'
+        try:
+            df_lifestyle = pd.read_csv(csv_file)
+        except IOError:
+            print 'File {} not found.'.format(csv_file)
+            sys.exit()
 
         lifestyle_var_names = list(df_lifestyle.columns[1:])
 
@@ -49,6 +58,7 @@ class JawboneData():
         df_lifestyle = df_lifestyle.set_index('day_of_year')
 
         self.df_lifestyle = df_lifestyle
+        self.lifestyle_var_names = lifestyle_var_names
 
         # joining jawbone data to lifestyle data
         df_sleep_mins_full = df_sleep_mins.join(
@@ -99,3 +109,66 @@ class JawboneData():
 
     def time_series_plots(self):
         plt.style.use('ggplot')
+
+        plt.figure(figsize=(10,20))
+
+        plt.subplot(211)
+        for col in self.df_sleep_mins.columns[:3]:
+            plt.plot(self.df_sleep_mins.loc[:,col],'o-',label=col[2:])
+        plt.legend();
+        plt.title('Minutes of each phase', size=16);
+        plt.yticks(size=16)
+        plt.xticks(self.df_sleep_mins.index[0::3],
+                   [strftime('%m/%d', st) for st in self.sleep_data_days],
+                  rotation=45, size=16);
+
+        plt.subplot(212)
+        for col in self.df_sleep_percentages.columns[:3]:
+            plt.plot(self.df_sleep_percentages.loc[:,col],'o-',label=col[2:])
+        plt.legend();
+        plt.title('% of each phase', size=16);
+        plt.yticks(size=16)
+        plt.xticks(self.df_sleep_percentages.index[0::3],
+                   [strftime('%m/%d', st) for st in self.sleep_data_days],
+                  rotation=45, size=16);
+
+        plots_file = 'time_series_plots.pdf'
+        plt.savefig(plots_file)
+        print 'Saved time series plots to {}'.format(plots_file)
+
+    def regressions(self):
+        pd.set_option('precision',3)
+        # regressions that treat independent vars as continuous
+        cont_X  = self.df_sleep_mins_full[['s_asleep_time', 's_duration'] + self.lifestyle_var_names]
+
+        tst_only_X = self.df_sleep_mins_full[['s_duration']]
+
+        cont_Y = self.df_sleep_mins_full[['s_light', 's_clinical_deep', 's_rem']]
+
+        lr_rem = sm.OLS(cont_Y['s_rem'], sm.add_constant(cont_X)).fit()
+        lr_deep = sm.OLS(cont_Y['s_clinical_deep'], sm.add_constant(cont_X)).fit()
+        lr_light = sm.OLS(cont_Y['s_light'], sm.add_constant(cont_X)).fit()
+
+        lr_tst = sm.OLS(cont_X['s_duration'],
+                           sm.add_constant(cont_X.drop('s_duration',axis=1))
+                          ).fit()
+
+        self.lr_rem = lr_rem
+        self.lr_deep = lr_deep
+        self.lr_light = lr_light
+        self.lr_tst = lr_tst
+
+        self.regression_names = ['REM sleep time (min)',
+                                 'deep sleep time (min)',
+                                 'light sleep time (min)',
+                                 'total sleep time (min)']
+
+        cont_regressions = [self.lr_rem, self.lr_deep, self.lr_light, self.lr_tst]
+
+        for lr, name in zip(cont_regressions, self.regression_names):
+            print 'Regression results for {}\n'.format(name)
+            print lr.summary()
+            pvals = lr.pvalues[self.lifestyle_var_names]
+            print '\n\nP values for lifestyle effect coefficients:'
+            print pvals
+            print '\n\n'
