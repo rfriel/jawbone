@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-import matplotlib.pyplot as plt
-
 from time import strptime, strftime
 import statsmodels.api as sm
+
+import warnings
 
 class JawboneData():
     def __init__(self, year):
@@ -13,7 +13,6 @@ class JawboneData():
             df = pd.read_csv(csv_file)
         except IOError:
             print 'File {} not found.'.format(csv_file)
-            sys.exit()
 
         # processing and cleaning jawbone data
         df_data = pd.DataFrame(
@@ -36,41 +35,44 @@ class JawboneData():
         self.sleep_data_days = sleep_data_days
 
         # processing and cleaning lifestyle data
+        self.lifestyle_flag = False
         csv_file = 'lifestyle_variables.csv'
         try:
             df_lifestyle = pd.read_csv(csv_file)
+            self.lifestyle_flag = True
         except IOError:
-            print 'File {} not found.'.format(csv_file)
-            sys.exit()
+            msg = 'File {} not found.  Lifestyle variable computations will not be performed.'.format(csv_file)
+            warnings.warn(msg)
 
-        lifestyle_var_names = list(df_lifestyle.columns[1:])
+        if self.lifestyle_flag:
+            lifestyle_var_names = list(df_lifestyle.columns[1:])
 
-        date_after_formatted = ['/'.join([('0' * (2-len(s)) + s) for s in row])
-          for row in [s.split('/') for s in df_lifestyle['date_after']]
-          ]
+            date_after_formatted = ['/'.join([('0' * (2-len(s)) + s) for s in row])
+              for row in [s.split('/') for s in df_lifestyle['date_after']]
+              ]
 
-        df_lifestyle['date_after'] = date_after_formatted
+            df_lifestyle['date_after'] = date_after_formatted
 
-        day_of_year = [strptime(s,'%m/%d/%y').tm_yday - 1
-                       for s in df_lifestyle['date_after']]
+            day_of_year = [strptime(s,'%m/%d/%y').tm_yday - 1
+                           for s in df_lifestyle['date_after']]
 
-        df_lifestyle['day_of_year'] = day_of_year
-        df_lifestyle = df_lifestyle.set_index('day_of_year')
+            df_lifestyle['day_of_year'] = day_of_year
+            df_lifestyle = df_lifestyle.set_index('day_of_year')
 
-        self.df_lifestyle = df_lifestyle
-        self.lifestyle_var_names = lifestyle_var_names
+            self.df_lifestyle = df_lifestyle
+            self.lifestyle_var_names = lifestyle_var_names
 
-        # joining jawbone data to lifestyle data
-        df_sleep_mins_full = df_sleep_mins.join(
-            df_lifestyle, how='inner'
-            ).drop('date_after', axis=1)
+            # joining jawbone data to lifestyle data
+            df_sleep_mins_full = df_sleep_mins.join(
+                df_lifestyle, how='inner'
+                ).drop('date_after', axis=1)
 
-        df_sleep_percentages_full = df_sleep_percentages.join(
-            df_lifestyle, how='inner'
-            ).drop('date_after', axis=1)
+            df_sleep_percentages_full = df_sleep_percentages.join(
+                df_lifestyle, how='inner'
+                ).drop('date_after', axis=1)
 
-        self.df_sleep_mins_full = df_sleep_mins_full
-        self.df_sleep_percentages_full = df_sleep_percentages_full
+            self.df_sleep_mins_full = df_sleep_mins_full
+            self.df_sleep_percentages_full = df_sleep_percentages_full
 
         # computing a proxy for REM latency
         lr_rem = sm.OLS(df_sleep_mins['s_rem'], sm.add_constant(df_sleep_mins['s_duration'])).fit()
@@ -79,11 +81,12 @@ class JawboneData():
         df_sleep_mins_lat = df_sleep_mins.copy()
         df_sleep_mins_lat['rem_lat'] = rem_latency
 
-        df_sleep_mins_full_lat = df_sleep_mins_lat.join(
-            df_lifestyle, how='inner'
-            ).drop('date_after', axis=1)
+        if self.lifestyle_flag:
+            df_sleep_mins_full_lat = df_sleep_mins_lat.join(
+                df_lifestyle, how='inner'
+                ).drop('date_after', axis=1)
 
-        self.df_sleep_mins_full_lat = df_sleep_mins_full_lat
+            self.df_sleep_mins_full_lat = df_sleep_mins_full_lat
 
     def summary_statistics(self):
         pd.set_option('precision',1)
@@ -103,11 +106,14 @@ class JawboneData():
         print 'Summary statistics for percent of sleep spent in each phase\n'
         print self.df_sleep_percentages[self.stage_cols].describe()
 
-        print ''
-        print 'Summary statistics for lifestyle variables\n'
-        print self.df_lifestyle.describe()
+        if self.lifestyle_flag:
+            print ''
+            print 'Summary statistics for lifestyle variables\n'
+            print self.df_lifestyle.describe()
 
     def time_series_plots(self):
+        import matplotlib.pyplot as plt
+
         plt.style.use('ggplot')
 
         plt.figure(figsize=(10,20))
@@ -137,7 +143,8 @@ class JawboneData():
         print 'Saved time series plots to {}'.format(plots_file)
 
     def regressions(self):
-        pd.set_option('precision',3)
+        if not self.lifestyle_flag:
+            raise AttributeError('Cannot perform regressions because no lifestyle data was found when this object was created.')
         # regressions that treat independent vars as continuous
         cont_X  = self.df_sleep_mins_full[['s_asleep_time', 's_duration'] + self.lifestyle_var_names]
 
@@ -164,6 +171,8 @@ class JawboneData():
                                  'total sleep time (min)']
 
         cont_regressions = [self.lr_rem, self.lr_deep, self.lr_light, self.lr_tst]
+
+        pd.set_option('precision',3)
 
         for lr, name in zip(cont_regressions, self.regression_names):
             print 'Regression results for {}\n'.format(name)

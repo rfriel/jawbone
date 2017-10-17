@@ -38,7 +38,8 @@ if __name__ == '__main__':
 
     print 80*'~'
     data.summary_statistics()
-    print 80*'~'
-    data.regressions()
+    if data.lifestyle_flag:
+        print 80*'~'
+        data.regressions()
     print 80*'~'
     data.time_series_plots()
