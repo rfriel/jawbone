@@ -19,7 +19,7 @@ Jawbone allows users to download their data for a specified calendar year after 
 
 The main reason I wrote this code was to explore how day-to-day lifestyle factors, like exercise or taking sleeping pills, affect my sleep.  I record these in a file called `lifestyle_variables.csv.`  (If this file is not provided, the script will still run, but without this functionality.)
 
-The `lifestyle_variables.csv` file should begin with a comma-separated list of variable names.  The first column should be called `date_after` and contains a date in m/d/yy format.  This date is the day *after* the day for which the variables are being recorded.  (E.g., I make certain lifestyle choices on 9/5/17; I go to sleep that night; in the morning I record that I those choices in a new row, with the `date_after` value '9/6/17', which conveniently is the current date as I am entering data.)  The other columns can represent any number of user-chosen and user-named variables, assumed to be continuous (and converted to floats internally).
+The `lifestyle_variables.csv` file should begin with a comma-separated list of variable names.  The first column should be called `date_after` and contains a date in m/d/yy format.  This date is the day *after* the day for which the variables are being recorded.  (E.g., I make certain lifestyle choices on 9/5/17; I go to sleep that night; in the morning I record those choices in a new row, with the `date_after` value '9/6/17', which conveniently is the current date as I am entering data.)  The other columns can represent any number of user-chosen and user-named variables, assumed to be continuous (and converted to floats internally).
 
 ## Output
 
